@@ -14,7 +14,7 @@ camera_cmd_vel = Twist()
 ranging_cmd_vel = Twist()
 bearing_cmd_vel = Twist()
 fx,fy,lx,ly = 0.1496483333,0.1496483333,0.1693333333,0.127
-height_l = 0.5
+height_l = 1
 height_u = 100
 d_safe_car = 1
 d_measuring = 7
@@ -78,28 +78,25 @@ def odom(msg):
 				  [0]*6+[2*(Pb[0]-P1[0]), 2*(Pb[1]-P1[1])]+[0]*2, \
 				  [0]*6+[2*(Pb[0]-P2[0]), 2*(Pb[1]-P2[1])]+[0]*2, \
 				  [0]*6+[2*(Pb[0]-P3[0]), 2*(Pb[1]-P3[1])]+[0]*2, \
-				  [-2*(Pc[0]-Pr[0]), -2*(Pc[1]-Pr[1])]+[0]*8, \
-				  [-2*(Pc[0]-Pb[0]), -2*(Pc[1]-Pb[1])]+[0]*8, \
-				  [0]*3+[-2*(Pr[0]-Pc[0]), -2*(Pr[1]-Pc[1])]+[0]*5, \
-				  [0]*3+[-2*(Pr[0]-Pb[0]), -2*(Pr[1]-Pb[1])]+[0]*5, \
-				  [0]*6+[-2*(Pb[0]-Pc[0]), -2*(Pb[1]-Pc[1])]+[0]*2, \
-				  [0]*6+[-2*(Pb[0]-Pr[0]), -2*(Pb[1]-Pr[1])]+[0]*2, \
-				  [2*(Pc[0]-Pr[0]), 2*(Pc[1]-Pr[1])]+[0]*8, \
-				  [2*(Pc[0]-Pb[0]), 2*(Pc[1]-Pb[1])]+[0]*8, \
-				  [0]*3+[2*(Pr[0]-Pc[0]), 2*(Pr[1]-Pc[1])]+[0]*5, \
-				  [0]*3+[2*(Pr[0]-Pb[0]), 2*(Pr[1]-Pb[1])]+[0]*5, \
-				  [0]*6+[2*(Pb[0]-Pc[0]), 2*(Pb[1]-Pc[1])]+[0]*2, \
-				  [0]*6+[2*(Pb[0]-Pr[0]), 2*(Pb[1]-Pr[1])]+[0]*2, \
+				  np.append(-2*(Pc-Pr),[0]*7), \
+				  np.append(-2*(Pc-Pb),[0]*7), \
+				  np.append([0]*3,np.append(-2*(Pr-Pc),[0]*4)), \
+				  np.append([0]*3,np.append(-2*(Pr-Pb),[0]*4)), \
+				  np.append([0]*6,np.append(-2*(Pb-Pc),0)), \
+				  np.append([0]*6,np.append(-2*(Pb-Pr),0)), \
+				  np.append(2*(Pc-Pr),[0]*7), \
+				  np.append(2*(Pc-Pb),[0]*7), \
+				  np.append([0]*3,np.append(2*(Pr-Pc),[0]*4)), \
+				  np.append([0]*3,np.append(2*(Pr-Pb),[0]*4)), \
+				  np.append([0]*6,np.append(2*(Pb-Pc),0)), \
+				  np.append([0]*6,np.append(2*(Pb-Pr),0)), \
 				  np.append(-(np.dot(nc,r1c_xy)*r1c_xy/np.linalg.norm(r1c_xy)**3-nc/np.linalg.norm(r1c_xy))/sqrt(1 - np.dot(nc,r1c_xy)**2/np.linalg.norm(r1c_xy)**2),np.append([0]*6,-np.dot(nc_dot,r1c_xy)/np.linalg.norm(r1c_xy)/sqrt(1 - np.dot(nc,r1c_xy)**2/np.linalg.norm(r1c_xy)**2))), \
 				  np.append(-(np.dot(nc,r2c_xy)*r2c_xy/np.linalg.norm(r2c_xy)**3-nc/np.linalg.norm(r2c_xy))/sqrt(1 - np.dot(nc,r2c_xy)**2/np.linalg.norm(r2c_xy)**2),np.append([0]*6,-np.dot(nc_dot,r2c_xy)/np.linalg.norm(r2c_xy)/sqrt(1 - np.dot(nc,r2c_xy)**2/np.linalg.norm(r2c_xy)**2))), \
 				  np.append(-(np.dot(nc,r3c_xy)*r3c_xy/np.linalg.norm(r3c_xy)**3-nc/np.linalg.norm(r3c_xy))/sqrt(1 - np.dot(nc,r3c_xy)**2/np.linalg.norm(r3c_xy)**2),np.append([0]*6,-np.dot(nc_dot,r3c_xy)/np.linalg.norm(r3c_xy)/sqrt(1 - np.dot(nc,r3c_xy)**2/np.linalg.norm(r3c_xy)**2))), \
 				  np.append((np.linalg.norm(r1c_z)*nc/np.dot(nc,r1c_xy)**2-r1c_z/np.linalg.norm(r1c_z)/np.dot(nc,r1c_xy))/(1 + np.linalg.norm(r1c_z)**2/np.dot(nc,r1c_xy)**2),np.append([0]*6,-np.linalg.norm(r1c_z)*np.dot(nc_dot,r1c_xy)/np.dot(nc,r1c_xy)**2/(1 + np.linalg.norm(r1c_z)**2/np.dot(nc,r1c_xy)**2))), \
 				  np.append((np.linalg.norm(r2c_z)*nc/np.dot(nc,r2c_xy)**2-r2c_z/np.linalg.norm(r2c_z)/np.dot(nc,r2c_xy))/(1 + np.linalg.norm(r2c_z)**2/np.dot(nc,r2c_xy)**2),np.append([0]*6,-np.linalg.norm(r2c_z)*np.dot(nc_dot,r2c_xy)/np.dot(nc,r2c_xy)**2/(1 + np.linalg.norm(r2c_z)**2/np.dot(nc,r2c_xy)**2))), \
 				  np.append((np.linalg.norm(r3c_z)*nc/np.dot(nc,r3c_xy)**2-r3c_z/np.linalg.norm(r3c_z)/np.dot(nc,r3c_xy))/(1 + np.linalg.norm(r3c_z)**2/np.dot(nc,r3c_xy)**2),np.append([0]*6,-np.linalg.norm(r3c_z)*np.dot(nc_dot,r3c_xy)/np.dot(nc,r3c_xy)**2/(1 + np.linalg.norm(r3c_z)**2/np.dot(nc,r3c_xy)**2))), \
-				  [0]*2+[-1]+[0]*7, \
-				  [0]*5+[-1]+[0]*4, \
-				  [0]*8+[-1]+[0] \
-				  ])
+				  [0]*2+[-1]+[0]*7])
 
 	b = np.array([[np.linalg.norm([Pc[0]-P1[0],Pc[1]-P1[1]])**2 - d_safe_car**2], \
 				  [np.linalg.norm([Pc[0]-P2[0],Pc[1]-P2[1]])**2 - d_safe_car**2], \
@@ -119,28 +116,25 @@ def odom(msg):
 				  [d_measuring**2 - np.linalg.norm([Pb[0]-P1[0],Pb[1]-P1[1]])**2], \
 				  [d_measuring**2 - np.linalg.norm([Pb[0]-P2[0],Pb[1]-P2[1]])**2], \
 				  [d_measuring**2 - np.linalg.norm([Pb[0]-P3[0],Pb[1]-P3[1]])**2], \
-				  [np.linalg.norm([Pc[0]-Pr[0],Pc[1]-Pr[1]])**2 - d_safe_uav**2], \
-				  [np.linalg.norm([Pc[0]-Pb[0],Pc[1]-Pb[1]])**2 - d_safe_uav**2], \
-				  [np.linalg.norm([Pr[0]-Pc[0],Pr[1]-Pc[1]])**2 - d_safe_uav**2], \
-				  [np.linalg.norm([Pr[0]-Pb[0],Pr[1]-Pb[1]])**2 - d_safe_uav**2], \
-				  [np.linalg.norm([Pb[0]-Pc[0],Pb[1]-Pc[1]])**2 - d_safe_uav**2], \
-				  [np.linalg.norm([Pb[0]-Pr[0],Pb[1]-Pr[1]])**2 - d_safe_uav**2], \
-				  [d_communication**2 - np.linalg.norm([Pc[0]-Pr[0],Pc[1]-Pr[1]])**2], \
-				  [d_communication**2 - np.linalg.norm([Pc[0]-Pb[0],Pc[1]-Pb[1]])**2], \
-				  [d_communication**2 - np.linalg.norm([Pr[0]-Pc[0],Pr[1]-Pc[1]])**2], \
-				  [d_communication**2 - np.linalg.norm([Pr[0]-Pb[0],Pr[1]-Pb[1]])**2], \
-				  [d_communication**2 - np.linalg.norm([Pb[0]-Pc[0],Pb[1]-Pc[1]])**2], \
-				  [d_communication**2 - np.linalg.norm([Pb[0]-Pr[0],Pb[1]-Pr[1]])**2], \
+				  [np.linalg.norm(Pc-Pr)**2 - d_safe_uav**2], \
+				  [np.linalg.norm(Pc-Pb)**2 - d_safe_uav**2], \
+				  [np.linalg.norm(Pr-Pc)**2 - d_safe_uav**2], \
+				  [np.linalg.norm(Pr-Pb)**2 - d_safe_uav**2], \
+				  [np.linalg.norm(Pb-Pc)**2 - d_safe_uav**2], \
+				  [np.linalg.norm(Pb-Pr)**2 - d_safe_uav**2], \
+				  [d_communication**2 - np.linalg.norm(Pc-Pr)**2], \
+				  [d_communication**2 - np.linalg.norm(Pc-Pb)**2], \
+				  [d_communication**2 - np.linalg.norm(Pr-Pc)**2], \
+				  [d_communication**2 - np.linalg.norm(Pr-Pb)**2], \
+				  [d_communication**2 - np.linalg.norm(Pb-Pc)**2], \
+				  [d_communication**2 - np.linalg.norm(Pb-Pr)**2], \
 				  [atan2(lx,2*fx) - acos(np.dot(nc,r1c_xy)/np.linalg.norm(r1c_xy))], \
 				  [atan2(lx,2*fx) - acos(np.dot(nc,r2c_xy)/np.linalg.norm(r2c_xy))], \
 				  [atan2(lx,2*fx) - acos(np.dot(nc,r3c_xy)/np.linalg.norm(r3c_xy))], \
 				  [atan2(ly,2*fy) - atan2(np.linalg.norm(r1c_z),np.dot(nc,r1c_xy))], \
 				  [atan2(ly,2*fy) - atan2(np.linalg.norm(r2c_z),np.dot(nc,r2c_xy))], \
 				  [atan2(ly,2*fy) - atan2(np.linalg.norm(r3c_z),np.dot(nc,r3c_xy))], \
-				  [Pc[2] - height_l], \
-				  [Pr[2] - height_l], \
-				  [Pb[2] - height_l] \
-				  ])
+				  [Pc[2] - height_l]])
 
 def	qpsolver():
 	global camera_cmd_vel,ranging_cmd_vel,bearing_cmd_vel
@@ -153,7 +147,7 @@ def	qpsolver():
 		cons.append({'type': 'ineq', 'fun': cons_maker1(i)})
 	
 	ini = tuple(np.zeros(b.size + 10))
-	bnds = ((-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2)) + ((0, np.inf),)*b.size
+	bnds = ((-1.5, 1.5), (-1.5, 1.5), (-1.0, 1.0), (-1.5, 1.5), (-1.5, 1.5), (-1.0, 1.0), (-1.5, 1.5), (-1.5, 1.5), (-1.0, 1.0), (-0.2, 0.2)) + ((0, np.inf),)*b.size
 	
 	optimal = minimize(object_fun, ini, method='SLSQP', bounds=bnds, constraints=cons,options={'maxiter':1000}).x
 	
@@ -167,12 +161,10 @@ def	qpsolver():
 	bearing_cmd_vel.linear.y = optimal[7]
 	bearing_cmd_vel.linear.z = optimal[8]
 	camera_cmd_vel.angular.z = optimal[9]
-	
-	print(camera_cmd_vel.linear.z)
-	print(ranging_cmd_vel.linear.z)
-	print(bearing_cmd_vel.linear.z)
+	print(camera_cmd_vel.linear)
+	print(ranging_cmd_vel.linear)
+	print(bearing_cmd_vel.linear)
 	print(camera_cmd_vel.angular.z)
-	
 	px4_camera.vel_control(camera_cmd_vel)
 	px4_ranging.vel_control(ranging_cmd_vel)
 	px4_bearing.vel_control(bearing_cmd_vel)
@@ -185,13 +177,12 @@ if __name__ == '__main__':
 		px4_ranging = Px4Controller(uavtype[1])
 		px4_bearing = Px4Controller(uavtype[2])
 		rate = rospy.Rate(20)
-		while thetac == None:
-			thetac = px4_camera.current_heading
 		
 		while not rospy.is_shutdown():
 			msg = rospy.wait_for_message('/gazebo/model_states', ModelStates)
+			while thetac == None:
+				thetac = px4_camera.current_heading
 			odom(msg)
-			thetac = px4_camera.current_heading
 			qpsolver()
 			rate.sleep()
 	except rospy.ROSInterruptException:
