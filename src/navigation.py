@@ -29,13 +29,12 @@ def odom(msg):
 
 def control():
 	global car1_cmd_vel,car2_cmd_vel,car3_cmd_vel,time
-	car1_cmd_vel.linear.x = 0.1
-	car2_cmd_vel.linear.x = 0.1
-	car3_cmd_vel.linear.x = 0.1
+	car1_cmd_vel.linear.x = 0.2
+	car2_cmd_vel.linear.x = 0.2
+	car3_cmd_vel.linear.x = 0.2
 	car1_vel_pub.publish(car1_cmd_vel)
 	car2_vel_pub.publish(car2_cmd_vel)
 	car3_vel_pub.publish(car3_cmd_vel)
-	time = time+1
 
 def stop():
 	global car1_cmd_vel,car2_cmd_vel,car3_cmd_vel
@@ -61,6 +60,7 @@ if __name__ == '__main__':
 			if time > 400:
 				stop()
 				break
+			time = time+1
 			rate.sleep()
 	except rospy.ROSInterruptException:
 		pass

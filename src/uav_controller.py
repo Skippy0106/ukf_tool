@@ -5,6 +5,7 @@ from math import sin,cos,sqrt,atan2,acos
 import numpy as np
 import threading
 from gazebo_msgs.msg import ModelStates
+from std_msgs.msg import Float64MultiArray
 from scipy.optimize import minimize,fsolve
 from geometry_msgs.msg import Twist
 from px4_mavros import Px4Controller
@@ -13,7 +14,7 @@ P1,P2,P3,Pc,Pr,Pb,thetac,A,b = None,None,None,None,None,None,None,None,None
 camera_cmd_vel = Twist()
 ranging_cmd_vel = Twist()
 bearing_cmd_vel = Twist()
-fx,fy,lx,ly = 0.1496483333,0.1496483333,0.1693333333,0.127
+fx,fy,lx,ly = 0.1496485702,0.1496485702,0.1693333333,0.127
 height_l = 0.5
 height_u = 100
 d_safe_car = 1
@@ -21,6 +22,7 @@ d_measuring = 7
 d_safe_uav = 0.5
 d_communication = 20
 gamma = 1.0
+state = Float64MultiArray()
 
 def object_fun(x):
 	return -( ((P1[0] - (Pb[0] + x[6]))*(P1[0] - (Pr[0] + x[3])) + (P1[1] - (Pb[1] + x[7]))*(P1[1] - (Pr[1] + x[4])))**2/(((P1[0] - (Pb[0] + x[6]))**2 + (P1[1] - (Pb[1] + x[7]))**2)**2*((P1[0] - (Pr[0] + x[3]))**2 + (P1[1] - (Pr[1] + x[4]))**2)) + (fx**2*((P1[0] - (Pr[0] + x[3]))*(P1[0] - (Pc[0] + x[0])) + (P1[1] - (Pr[1] + x[4]))*(P1[1] - (Pc[1] + x[1])))**2 + fy**2*(P1[2] - (Pc[2] + x[2]))**2*((P1[0] - (Pr[0] + x[3]))*sin(thetac + x[9]) - (P1[1] - (Pr[1] + x[4]))*cos(thetac + x[9]))**2)/((cos(thetac + x[9])*(P1[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P1[1] - (Pc[1] + x[1])))**4*((P1[0] - (Pr[0] + x[3]))**2 + (P1[1] - (Pr[1] + x[4]))**2)) + (fx**2*((P1[1] - (Pb[1] + x[7]))*(P1[0] - (Pc[0] + x[0])) + (P1[0] - (Pb[0] + x[6]))*(P1[1] - (Pc[1] + x[1])))**2 + fy**2*(P1[2] - (Pc[2] + x[2]))**2*((P1[1] - (Pb[1] + x[7]))*sin(thetac + x[9]) - (P1[0] - (Pb[0] + x[6]))*cos(thetac + x[9]))**2)/((cos(thetac + x[9])*(P1[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P1[1] - (Pc[1] + x[1])))**4*((P1[0] - (Pb[0] + x[6]))**2 + (P1[1] - (Pb[1] + x[7]))**2)**2) + fx**2*fy**2*(P1[2] - (Pc[2] + x[2]))**2/(cos(thetac + x[9])*(P1[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P1[1] - (Pc[1] + x[1])))**6 )*( ((P2[0] - (Pb[0] + x[6]))*(P2[0] - (Pr[0] + x[3])) + (P2[1] - (Pb[1] + x[7]))*(P2[1] - (Pr[1] + x[4])))**2/(((P2[0] - (Pb[0] + x[6]))**2 + (P2[1] - (Pb[1] + x[7]))**2)**2*((P2[0] - (Pr[0] + x[3]))**2 + (P2[1] - (Pr[1] + x[4]))**2)) + (fx**2*((P2[0] - (Pr[0] + x[3]))*(P2[0] - (Pc[0] + x[0])) + (P2[1] - (Pr[1] + x[4]))*(P2[1] - (Pc[1] + x[1])))**2 + fy**2*(P2[2] - (Pc[2] + x[2]))**2*((P2[0] - (Pr[0] + x[3]))*sin(thetac + x[9]) - (P2[1] - (Pr[1] + x[4]))*cos(thetac + x[9]))**2)/((cos(thetac + x[9])*(P2[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P2[1] - (Pc[1] + x[1])))**4*((P2[0] - (Pr[0] + x[3]))**2 + (P2[1] - (Pr[1] + x[4]))**2)) + (fx**2*((P2[1] - (Pb[1] + x[7]))*(P2[0] - (Pc[0] + x[0])) + (P2[0] - (Pb[0] + x[6]))*(P2[1] - (Pc[1] + x[1])))**2 + fy**2*(P2[2] - (Pc[2] + x[2]))**2*((P2[1] - (Pb[1] + x[7]))*sin(thetac + x[9]) - (P2[0] - (Pb[0] + x[6]))*cos(thetac + x[9]))**2)/((cos(thetac + x[9])*(P2[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P2[1] - (Pc[1] + x[1])))**4*((P2[0] - (Pb[0] + x[6]))**2 + (P2[1] - (Pb[1] + x[7]))**2)**2) + fx**2*fy**2*(P2[2] - (Pc[2] + x[2]))**2/(cos(thetac + x[9])*(P2[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P2[1] - (Pc[1] + x[1])))**6 )*( ((P3[0] - (Pb[0] + x[6]))*(P3[0] - (Pr[0] + x[3])) + (P3[1] - (Pb[1] + x[7]))*(P3[1] - (Pr[1] + x[4])))**2/(((P3[0] - (Pb[0] + x[6]))**2 + (P3[1] - (Pb[1] + x[7]))**2)**2*((P3[0] - (Pr[0] + x[3]))**2 + (P3[1] - (Pr[1] + x[4]))**2)) + (fx**2*((P3[0] - (Pr[0] + x[3]))*(P3[0] - (Pc[0] + x[0])) + (P3[1] - (Pr[1] + x[4]))*(P3[1] - (Pc[1] + x[1])))**2 + fy**2*(P3[2] - (Pc[2] + x[2]))**2*((P3[0] - (Pr[0] + x[3]))*sin(thetac + x[9]) - (P3[1] - (Pr[1] + x[4]))*cos(thetac + x[9]))**2)/((cos(thetac + x[9])*(P3[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P3[1] - (Pc[1] + x[1])))**4*((P3[0] - (Pr[0] + x[3]))**2 + (P3[1] - (Pr[1] + x[4]))**2)) + (fx**2*((P3[1] - (Pb[1] + x[7]))*(P3[0] - (Pc[0] + x[0])) + (P3[0] - (Pb[0] + x[6]))*(P3[1] - (Pc[1] + [1])))**2 + fy**2*(P3[2] - (Pc[2] + x[2]))**2*((P3[1] - (Pb[1] + x[7]))*sin(thetac + x[9]) - (P3[0] - (Pb[0] + x[6]))*cos(thetac + x[9]))**2)/((cos(thetac + x[9])*(P3[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P3[1] - (Pc[1] + x[1])))**4*((P3[0] - (Pb[0] + x[6]))**2 + (P3[1] - (Pb[1] + x[7]))**2)**2) + fx**2*fy**2*(P3[2] - (Pc[2] + x[2]))**2/(cos(thetac + x[9])*(P3[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P3[1] - (Pc[1] + x[1])))**6 )
@@ -143,7 +145,7 @@ def odom(msg):
 				  ])
 
 def	qpsolver():
-	global camera_cmd_vel,ranging_cmd_vel,bearing_cmd_vel
+	global camera_cmd_vel,ranging_cmd_vel,bearing_cmd_vel,state
 	
 	cons = []
 	
@@ -168,11 +170,6 @@ def	qpsolver():
 	bearing_cmd_vel.linear.z = optimal[8]
 	camera_cmd_vel.angular.z = optimal[9]
 	
-	print(camera_cmd_vel.linear.z)
-	print(ranging_cmd_vel.linear.z)
-	print(bearing_cmd_vel.linear.z)
-	print(camera_cmd_vel.angular.z)
-	
 	px4_camera.vel_control(camera_cmd_vel)
 	px4_ranging.vel_control(ranging_cmd_vel)
 	px4_bearing.vel_control(bearing_cmd_vel)
@@ -180,6 +177,7 @@ def	qpsolver():
 if __name__ == '__main__':
 	try:
 		rospy.init_node('controller')
+		state_pub = rospy.Publisher("/state", Float64MultiArray, queue_size=10)
 		uavtype = ["iris_camera","iris_ranging","iris_bearing"]
 		px4_camera = Px4Controller(uavtype[0])
 		px4_ranging = Px4Controller(uavtype[1])
@@ -192,6 +190,9 @@ if __name__ == '__main__':
 			msg = rospy.wait_for_message('/gazebo/model_states', ModelStates)
 			odom(msg)
 			thetac = px4_camera.current_heading
+			state.data = [P1[0],P1[1],P1[2],P2[0],P2[1],P2[2],P3[0],P3[1],P3[2], \
+						  Pc[0],Pc[1],Pc[2],Pr[0],Pr[1],Pr[2],Pb[0],Pb[1],Pb[2],thetac]
+			state_pub.publish(state)
 			qpsolver()
 			rate.sleep()
 	except rospy.ROSInterruptException:
