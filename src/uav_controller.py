@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import rospy
-from math import sin,cos,sqrt,atan2,acos
+from math import sin,cos,sqrt,atan2,acos,pi
 import numpy as np
 import threading
 from gazebo_msgs.msg import ModelStates
@@ -15,6 +15,7 @@ camera_cmd_vel = Twist()
 ranging_cmd_vel = Twist()
 bearing_cmd_vel = Twist()
 fx,fy,lx,ly = 0.1496485702,0.1496485702,0.1693333333,0.127
+x_fov_wealth = 2*pi/180
 height_l = 0.5
 height_u = 100
 d_safe_car = 1
@@ -22,7 +23,7 @@ d_measuring = 7
 d_safe_uav = 0.5
 d_communication = 20
 gamma = 1.0
-state = Float64MultiArray()
+state,covariance = Float64MultiArray(),Float64MultiArray()
 
 def object_fun(x):
 	return -( ((P1[0] - (Pb[0] + x[6]))*(P1[0] - (Pr[0] + x[3])) + (P1[1] - (Pb[1] + x[7]))*(P1[1] - (Pr[1] + x[4])))**2/(((P1[0] - (Pb[0] + x[6]))**2 + (P1[1] - (Pb[1] + x[7]))**2)**2*((P1[0] - (Pr[0] + x[3]))**2 + (P1[1] - (Pr[1] + x[4]))**2)) + (fx**2*((P1[0] - (Pr[0] + x[3]))*(P1[0] - (Pc[0] + x[0])) + (P1[1] - (Pr[1] + x[4]))*(P1[1] - (Pc[1] + x[1])))**2 + fy**2*(P1[2] - (Pc[2] + x[2]))**2*((P1[0] - (Pr[0] + x[3]))*sin(thetac + x[9]) - (P1[1] - (Pr[1] + x[4]))*cos(thetac + x[9]))**2)/((cos(thetac + x[9])*(P1[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P1[1] - (Pc[1] + x[1])))**4*((P1[0] - (Pr[0] + x[3]))**2 + (P1[1] - (Pr[1] + x[4]))**2)) + (fx**2*((P1[1] - (Pb[1] + x[7]))*(P1[0] - (Pc[0] + x[0])) + (P1[0] - (Pb[0] + x[6]))*(P1[1] - (Pc[1] + x[1])))**2 + fy**2*(P1[2] - (Pc[2] + x[2]))**2*((P1[1] - (Pb[1] + x[7]))*sin(thetac + x[9]) - (P1[0] - (Pb[0] + x[6]))*cos(thetac + x[9]))**2)/((cos(thetac + x[9])*(P1[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P1[1] - (Pc[1] + x[1])))**4*((P1[0] - (Pb[0] + x[6]))**2 + (P1[1] - (Pb[1] + x[7]))**2)**2) + fx**2*fy**2*(P1[2] - (Pc[2] + x[2]))**2/(cos(thetac + x[9])*(P1[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P1[1] - (Pc[1] + x[1])))**6 )*( ((P2[0] - (Pb[0] + x[6]))*(P2[0] - (Pr[0] + x[3])) + (P2[1] - (Pb[1] + x[7]))*(P2[1] - (Pr[1] + x[4])))**2/(((P2[0] - (Pb[0] + x[6]))**2 + (P2[1] - (Pb[1] + x[7]))**2)**2*((P2[0] - (Pr[0] + x[3]))**2 + (P2[1] - (Pr[1] + x[4]))**2)) + (fx**2*((P2[0] - (Pr[0] + x[3]))*(P2[0] - (Pc[0] + x[0])) + (P2[1] - (Pr[1] + x[4]))*(P2[1] - (Pc[1] + x[1])))**2 + fy**2*(P2[2] - (Pc[2] + x[2]))**2*((P2[0] - (Pr[0] + x[3]))*sin(thetac + x[9]) - (P2[1] - (Pr[1] + x[4]))*cos(thetac + x[9]))**2)/((cos(thetac + x[9])*(P2[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P2[1] - (Pc[1] + x[1])))**4*((P2[0] - (Pr[0] + x[3]))**2 + (P2[1] - (Pr[1] + x[4]))**2)) + (fx**2*((P2[1] - (Pb[1] + x[7]))*(P2[0] - (Pc[0] + x[0])) + (P2[0] - (Pb[0] + x[6]))*(P2[1] - (Pc[1] + x[1])))**2 + fy**2*(P2[2] - (Pc[2] + x[2]))**2*((P2[1] - (Pb[1] + x[7]))*sin(thetac + x[9]) - (P2[0] - (Pb[0] + x[6]))*cos(thetac + x[9]))**2)/((cos(thetac + x[9])*(P2[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P2[1] - (Pc[1] + x[1])))**4*((P2[0] - (Pb[0] + x[6]))**2 + (P2[1] - (Pb[1] + x[7]))**2)**2) + fx**2*fy**2*(P2[2] - (Pc[2] + x[2]))**2/(cos(thetac + x[9])*(P2[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P2[1] - (Pc[1] + x[1])))**6 )*( ((P3[0] - (Pb[0] + x[6]))*(P3[0] - (Pr[0] + x[3])) + (P3[1] - (Pb[1] + x[7]))*(P3[1] - (Pr[1] + x[4])))**2/(((P3[0] - (Pb[0] + x[6]))**2 + (P3[1] - (Pb[1] + x[7]))**2)**2*((P3[0] - (Pr[0] + x[3]))**2 + (P3[1] - (Pr[1] + x[4]))**2)) + (fx**2*((P3[0] - (Pr[0] + x[3]))*(P3[0] - (Pc[0] + x[0])) + (P3[1] - (Pr[1] + x[4]))*(P3[1] - (Pc[1] + x[1])))**2 + fy**2*(P3[2] - (Pc[2] + x[2]))**2*((P3[0] - (Pr[0] + x[3]))*sin(thetac + x[9]) - (P3[1] - (Pr[1] + x[4]))*cos(thetac + x[9]))**2)/((cos(thetac + x[9])*(P3[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P3[1] - (Pc[1] + x[1])))**4*((P3[0] - (Pr[0] + x[3]))**2 + (P3[1] - (Pr[1] + x[4]))**2)) + (fx**2*((P3[1] - (Pb[1] + x[7]))*(P3[0] - (Pc[0] + x[0])) + (P3[0] - (Pb[0] + x[6]))*(P3[1] - (Pc[1] + [1])))**2 + fy**2*(P3[2] - (Pc[2] + x[2]))**2*((P3[1] - (Pb[1] + x[7]))*sin(thetac + x[9]) - (P3[0] - (Pb[0] + x[6]))*cos(thetac + x[9]))**2)/((cos(thetac + x[9])*(P3[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P3[1] - (Pc[1] + x[1])))**4*((P3[0] - (Pb[0] + x[6]))**2 + (P3[1] - (Pb[1] + x[7]))**2)**2) + fx**2*fy**2*(P3[2] - (Pc[2] + x[2]))**2/(cos(thetac + x[9])*(P3[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P3[1] - (Pc[1] + x[1])))**6 )
@@ -133,9 +134,9 @@ def odom(msg):
 				  [d_communication**2 - np.linalg.norm([Pr[0]-Pb[0],Pr[1]-Pb[1]])**2], \
 				  [d_communication**2 - np.linalg.norm([Pb[0]-Pc[0],Pb[1]-Pc[1]])**2], \
 				  [d_communication**2 - np.linalg.norm([Pb[0]-Pr[0],Pb[1]-Pr[1]])**2], \
-				  [atan2(lx,2*fx) - acos(np.dot(nc,r1c_xy)/np.linalg.norm(r1c_xy))], \
-				  [atan2(lx,2*fx) - acos(np.dot(nc,r2c_xy)/np.linalg.norm(r2c_xy))], \
-				  [atan2(lx,2*fx) - acos(np.dot(nc,r3c_xy)/np.linalg.norm(r3c_xy))], \
+				  [atan2(lx,2*fx) - x_fov_wealth - acos(np.dot(nc,r1c_xy)/np.linalg.norm(r1c_xy))], \
+				  [atan2(lx,2*fx) - x_fov_wealth - acos(np.dot(nc,r2c_xy)/np.linalg.norm(r2c_xy))], \
+				  [atan2(lx,2*fx) - x_fov_wealth - acos(np.dot(nc,r3c_xy)/np.linalg.norm(r3c_xy))], \
 				  [atan2(ly,2*fy) - atan2(np.linalg.norm(r1c_z),np.dot(nc,r1c_xy))], \
 				  [atan2(ly,2*fy) - atan2(np.linalg.norm(r2c_z),np.dot(nc,r2c_xy))], \
 				  [atan2(ly,2*fy) - atan2(np.linalg.norm(r3c_z),np.dot(nc,r3c_xy))], \
@@ -145,7 +146,7 @@ def odom(msg):
 				  ])
 
 def	qpsolver():
-	global camera_cmd_vel,ranging_cmd_vel,bearing_cmd_vel,state
+	global camera_cmd_vel,ranging_cmd_vel,bearing_cmd_vel,covariance
 	
 	cons = []
 	
@@ -158,7 +159,8 @@ def	qpsolver():
 	bnds = ((-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2)) + ((0, np.inf),)*b.size
 	
 	optimal = minimize(object_fun, ini, method='SLSQP', bounds=bnds, constraints=cons,options={'maxiter':1000}).x
-	
+	covariance.data = [-1/object_fun(optimal[:10])]
+
 	camera_cmd_vel.linear.x = optimal[0]
 	camera_cmd_vel.linear.y = optimal[1]
 	camera_cmd_vel.linear.z = optimal[2]
@@ -178,6 +180,7 @@ if __name__ == '__main__':
 	try:
 		rospy.init_node('controller')
 		state_pub = rospy.Publisher("/state", Float64MultiArray, queue_size=10)
+		covariance_pub = rospy.Publisher("/covariance", Float64MultiArray, queue_size=10)
 		uavtype = ["iris_camera","iris_ranging","iris_bearing"]
 		px4_camera = Px4Controller(uavtype[0])
 		px4_ranging = Px4Controller(uavtype[1])
@@ -194,6 +197,7 @@ if __name__ == '__main__':
 						  Pc[0],Pc[1],Pc[2],Pr[0],Pr[1],Pr[2],Pb[0],Pb[1],Pb[2],thetac]
 			state_pub.publish(state)
 			qpsolver()
+			covariance_pub.publish(covariance)
 			rate.sleep()
 	except rospy.ROSInterruptException:
 		pass

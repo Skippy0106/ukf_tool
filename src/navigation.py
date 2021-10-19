@@ -27,8 +27,8 @@ def odom(msg):
 	l_Pr = Pr
 	l_Pb = Pb
 
-def control():
-	global car1_cmd_vel,car2_cmd_vel,car3_cmd_vel,time
+def start():
+	global car1_cmd_vel,car2_cmd_vel,car3_cmd_vel
 	car1_cmd_vel.linear.x = 0.2
 	car2_cmd_vel.linear.x = 0.2
 	car3_cmd_vel.linear.x = 0.2
@@ -36,11 +36,54 @@ def control():
 	car2_vel_pub.publish(car2_cmd_vel)
 	car3_vel_pub.publish(car3_cmd_vel)
 
+def control():
+	global car1_cmd_vel,car2_cmd_vel,car3_cmd_vel,time
+	'''	
+	if time < 101:
+		car1_cmd_vel.linear.x = 0.2
+		car2_cmd_vel.linear.x = 0.2
+		car3_cmd_vel.linear.x = 0.2
+	elif time < 161:
+		car1_cmd_vel.linear.x = 0.2
+		car2_cmd_vel.linear.x = 0.2
+		car3_cmd_vel.linear.x = 0.2
+		car1_cmd_vel.angular.z = -0.2
+		car2_cmd_vel.angular.z = -0.2
+		car3_cmd_vel.angular.z = -0.2
+	elif time < 261:
+		car1_cmd_vel.linear.x = 0.2
+		car2_cmd_vel.linear.x = 0.2
+		car3_cmd_vel.linear.x = 0.2
+	elif time < 321:
+		car1_cmd_vel.linear.x = 0.2
+		car2_cmd_vel.linear.x = 0.2
+		car3_cmd_vel.linear.x = 0.2
+		car1_cmd_vel.angular.z = 0.2
+		car2_cmd_vel.angular.z = 0.2
+		car3_cmd_vel.angular.z = 0.2
+	elif time < 421:
+		car1_cmd_vel.linear.x = 0.2
+		car2_cmd_vel.linear.x = 0.2
+		car3_cmd_vel.linear.x = 0.2
+	'''
+	if time < 600:
+		car1_cmd_vel.linear.x = 0.2
+		car2_cmd_vel.linear.x = 0.2
+		car3_cmd_vel.linear.x = 0.2
+
+	car1_vel_pub.publish(car1_cmd_vel)
+	car2_vel_pub.publish(car2_cmd_vel)
+	car3_vel_pub.publish(car3_cmd_vel)
+	time = time+1
+
 def stop():
 	global car1_cmd_vel,car2_cmd_vel,car3_cmd_vel
 	car1_cmd_vel.linear.x = 0.0
 	car2_cmd_vel.linear.x = 0.0
 	car3_cmd_vel.linear.x = 0.0
+	car1_cmd_vel.angular.z = 0.0
+	car2_cmd_vel.angular.z = 0.0
+	car3_cmd_vel.angular.z = 0.0
 	car1_vel_pub.publish(car1_cmd_vel)
 	car2_vel_pub.publish(car2_cmd_vel)
 	car3_vel_pub.publish(car3_cmd_vel)
@@ -56,11 +99,13 @@ if __name__ == '__main__':
 			msg = rospy.wait_for_message('/gazebo/model_states', ModelStates)
 			odom(msg)
 			if err_c < 0.001 and err_r < 0.001 and err_b < 0.001:
+				start()
+				time = 1
+			if time > 0:
 				control()
-			if time > 400:
+			if time > 600:
 				stop()
 				break
-			time = time+1
 			rate.sleep()
 	except rospy.ROSInterruptException:
 		pass
