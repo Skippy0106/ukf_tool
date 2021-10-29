@@ -15,9 +15,9 @@ camera_cmd_vel = Twist()
 ranging_cmd_vel = Twist()
 bearing_cmd_vel = Twist()
 fx,fy,lx,ly = 0.1496485702,0.1496485702,0.1693333333,0.127
-sigma_u,sigma_v,sigma_ranging,sigma_bearing = 0.007,0.007,0.01,0.01
-sigma_u,sigma_v,sigma_ranging,sigma_bearing = 1,1,1,1
 #fx,fy,lx,ly = 565.6,565.6,640,480
+#sigma_u,sigma_v,sigma_ranging,sigma_bearing = 0.007,0.007,0.01,0.01
+sigma_u,sigma_v,sigma_ranging,sigma_bearing = 1,1,1,1
 x_fov_wealth = 2*pi/180
 height_l = 0.5
 height_u = 100
@@ -26,7 +26,7 @@ d_measuring = 7
 d_safe_uav = 0.5
 d_communication = 20
 gamma = 1.0
-state,covariance = Float64MultiArray(),Float64MultiArray()
+theta_c = Float64MultiArray()
 
 def object_fun(x):
         return -( sigma_u**2*sigma_v**2*((P1[0] - (Pb[0] + x[6]))*(P1[0] - (Pr[0] + x[3])) + (P1[1] - (Pb[1] + x[7]))*(P1[1] - (Pr[1] + x[4])))**2/(((P1[0] - (Pb[0] + x[6]))**2 + (P1[1] - (Pb[1] + x[7]))**2)**2*((P1[0] - (Pr[0] + x[3]))**2 + (P1[1] - (Pr[1] + x[4]))**2)) \
@@ -163,7 +163,7 @@ def odom(msg):
 				  ])
 
 def	qpsolver():
-	global camera_cmd_vel,ranging_cmd_vel,bearing_cmd_vel,covariance
+	global camera_cmd_vel,ranging_cmd_vel,bearing_cmd_vel
 	
 	cons = []
 	
@@ -176,7 +176,6 @@ def	qpsolver():
 	bnds = ((-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2)) + ((0, np.inf),)*b.size
 	
 	optimal = minimize(object_fun, ini, method='SLSQP', bounds=bnds, constraints=cons,options={'maxiter':1000}).x
-        covariance.data = [-object_fun(optimal[:10])]
 
 	camera_cmd_vel.linear.x = optimal[0]
 	camera_cmd_vel.linear.y = optimal[1]
@@ -196,8 +195,7 @@ def	qpsolver():
 if __name__ == '__main__':
 	try:
 		rospy.init_node('controller')
-		state_pub = rospy.Publisher("/state", Float64MultiArray, queue_size=10)
-		covariance_pub = rospy.Publisher("/covariance", Float64MultiArray, queue_size=10)
+		thetac_pub = rospy.Publisher("/thetac", Float64MultiArray, queue_size=10)
 		uavtype = ["iris_camera","iris_ranging","iris_bearing"]
 		px4_camera = Px4Controller(uavtype[0])
 		px4_ranging = Px4Controller(uavtype[1])
@@ -210,11 +208,9 @@ if __name__ == '__main__':
 			msg = rospy.wait_for_message('/gazebo/model_states', ModelStates)
 			odom(msg)
 			thetac = px4_camera.current_heading
-			state.data = [P1[0],P1[1],P1[2],P2[0],P2[1],P2[2],P3[0],P3[1],P3[2], \
-						  Pc[0],Pc[1],Pc[2],Pr[0],Pr[1],Pr[2],Pb[0],Pb[1],Pb[2],thetac]
-			state_pub.publish(state)
+			theta_c.data = [thetac]
+			thetac_pub.publish(theta_c)
 			qpsolver()
-			covariance_pub.publish(covariance)
 			rate.sleep()
 	except rospy.ROSInterruptException:
 		pass

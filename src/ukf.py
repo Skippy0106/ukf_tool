@@ -42,7 +42,7 @@ class UKF:
         self.covar_weights[0] = (self.lambd / (self.n_dim + self.lambd)) + (1 - pow(self.alpha, 2) + self.beta)
         self.mean_weights[0] = (self.lambd / (self.n_dim + self.lambd))
 
-        for i in range(1, self.n_sig): 
+        for i in range(1, self.n_sig):
             self.covar_weights[i] = 1 / (2*(self.n_dim + self.lambd))
             self.mean_weights[i] = 1 / (2*(self.n_dim + self.lambd))
 
