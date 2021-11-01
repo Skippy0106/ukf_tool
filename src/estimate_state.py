@@ -9,8 +9,7 @@ from std_msgs.msg import Float64MultiArray
 
 P1,P2,P3,Pc,Pr,Pb,measurement = None,None,None,None,None,None,None
 fx,fy,Cu,Cv = 565.6,565.6,320.0,240.0
-d_t = 0.05
-time_now,time_last = 0,0
+time_last = 0
 det_covariance,all_state = Float64MultiArray(),Float64MultiArray()
 
 # Process Noise
@@ -105,8 +104,12 @@ def add_measurementnoise():
     measurement[[2,3,6,7,10,11]] += np.random.normal(0,0.01,6)
 
 def ukf():
+    global time_last
+
+    d_t = rospy.Time.now().to_sec() - time_last
     state_estimator.predict(d_t)
     state_estimator.update(12, measurement, r_measurement, uav_state)
+    time_last = rospy.Time.now().to_sec()
 
 if __name__ == "__main__":
     try:
