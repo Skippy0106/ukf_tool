@@ -7,9 +7,11 @@ from math import sin,cos,sqrt,atan2
 from gazebo_msgs.msg import ModelStates
 from std_msgs.msg import Float64MultiArray
 
-P1,P2,P3,Pc,Pr,Pb = None,None,None,None,None,None
+P1,P2,P3,Pc,Pr,Pb,measurement = None,None,None,None,None,None,None
 fx,fy,Cu,Cv = 565.6,565.6,320.0,240.0
 d_t = 0.05
+time_now,time_last = 0,0
+det_covariance,all_state = Float64MultiArray(),Float64MultiArray()
 
 # Process Noise
 q = np.eye(12)
@@ -95,6 +97,13 @@ def odom(msg):
     P2 = np.array([msg.pose[car2_index].position.x, msg.pose[car2_index].position.y, msg.pose[car2_index].position.z])
     P3 = np.array([msg.pose[car3_index].position.x, msg.pose[car3_index].position.y, msg.pose[car3_index].position.z])
 
+def add_measurementnoise():
+    global measurement
+
+    measurement = measurement_model(state, uav_state)
+    measurement[[0,1,4,5,8,9]] += np.random.normal(0,0.007,6)
+    measurement[[2,3,6,7,10,11]] += np.random.normal(0,0.01,6)
+
 def ukf():
     state_estimator.predict(d_t)
     state_estimator.update(12, measurement, r_measurement, uav_state)
@@ -102,21 +111,26 @@ def ukf():
 if __name__ == "__main__":
     try:
         rospy.init_node('estimate')
-        uav_state_pub = rospy.Publisher("/uav_state", Float64MultiArray, queue_size=10)
+        state_pub = rospy.Publisher("/state", Float64MultiArray, queue_size=10)
+        det_covariance_pub = rospy.Publisher("/det_covariance", Float64MultiArray, queue_size=10)
         # pass all the parameters into the UKF!
         # number of state variables, process noise, initial state, initial coariance, three tuning paramters, and the iterate function
-        state_estimator = UKF(12, q, np.zeros(12), 0.0001*np.eye(12), 0.04, 0.0, 2.0, iterate_x,measurement_model)
+        state_estimator = UKF(12, q, np.zeros(12), 0.01*np.eye(12), 0.04, 0.0, 2.0, iterate_x,measurement_model)
         rate = rospy.Rate(20)
         while not rospy.is_shutdown():
             msg = rospy.wait_for_message('/gazebo/model_states', ModelStates)
             odom(msg)
-            thetac = rospy.wait_for_message('/thetac', Float64MultiArray)
+            thetac = rospy.wait_for_message('/theta_iris_camera', Float64MultiArray)
             state = np.array([P1[0],P1[1],0,0,P2[0],P2[1],0,0,P3[0],P3[1],0,0])
             uav_state = np.array([Pc[0],Pc[1],Pc[2],Pr[0],Pr[1],Pr[2],Pb[0],Pb[1],Pb[2],thetac.data[0]])
-            measurement = measurement_model(state, uav_state)
+            add_measurementnoise()
             ukf()
+            all_state.data = list(state_estimator.get_state())+list(uav_state)
+            state_pub.publish(all_state)
             print "Estimated state: ", state_estimator.get_state()
             print "Covariance: ", np.linalg.det(state_estimator.get_covar())
+            det_covariance.data = [np.linalg.det(state_estimator.get_covar())]
+            det_covariance_pub.publish(det_covariance)
             rate.sleep()
     except rospy.ROSInterruptException:
         pass

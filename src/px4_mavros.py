@@ -8,6 +8,7 @@ import time
 from pyquaternion import Quaternion
 from nav_msgs.msg import Odometry
 from mavros_msgs.msg import State
+from std_msgs.msg import Float64MultiArray
 
 class Px4Controller:
 
@@ -18,6 +19,7 @@ class Px4Controller:
         self.current_state = State()
         self.cmd_vel = TwistStamped()
         self.local_cmd = TwistStamped()
+        self.theta = Float64MultiArray()
         self.current_heading = None
         self.x = None
         self.y = None
@@ -40,6 +42,7 @@ class Px4Controller:
         '''
         ros publishers
         '''
+        self.theta_pub = rospy.Publisher("/theta_"+uavtype, Float64MultiArray, queue_size=10)
         self.vel_pub = rospy.Publisher(uavtype +'/mavros/setpoint_velocity/cmd_vel', TwistStamped, queue_size=10)
         '''
         ros services
@@ -81,6 +84,8 @@ class Px4Controller:
         self.imu = msg
         self.current_heading = self.q2yaw(self.imu.orientation)
         self.received_imu = True
+        self.theta.data = [self.current_heading]
+        self.theta_pub.publish(self.theta)
         
     def q2yaw(self, q):
         if isinstance(q, Quaternion):

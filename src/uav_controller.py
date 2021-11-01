@@ -5,10 +5,10 @@ from math import sin,cos,sqrt,atan2,acos,pi
 import numpy as np
 import threading
 from gazebo_msgs.msg import ModelStates
-from std_msgs.msg import Float64MultiArray
 from scipy.optimize import minimize,fsolve
 from geometry_msgs.msg import Twist
 from px4_mavros import Px4Controller
+from std_msgs.msg import Float64MultiArray
 
 P1,P2,P3,Pc,Pr,Pb,thetac,A,b = None,None,None,None,None,None,None,None,None
 camera_cmd_vel = Twist()
@@ -18,18 +18,17 @@ fx,fy,lx,ly = 0.1496485702,0.1496485702,0.1693333333,0.127
 #fx,fy,lx,ly = 565.6,565.6,640,480
 #sigma_u,sigma_v,sigma_ranging,sigma_bearing = 0.007,0.007,0.01,0.01
 sigma_u,sigma_v,sigma_ranging,sigma_bearing = 1,1,1,1
-x_fov_wealth = 2*pi/180
+x_fov_wealth = 3*pi/180
 height_l = 0.5
 height_u = 100
-d_safe_car = 1
+d_safe_car = 3
 d_measuring = 7
-d_safe_uav = 0.5
+d_safe_uav = 1
 d_communication = 20
 gamma = 1.0
-theta_c = Float64MultiArray()
 
 def object_fun(x):
-        return -( sigma_u**2*sigma_v**2*((P1[0] - (Pb[0] + x[6]))*(P1[0] - (Pr[0] + x[3])) + (P1[1] - (Pb[1] + x[7]))*(P1[1] - (Pr[1] + x[4])))**2/(((P1[0] - (Pb[0] + x[6]))**2 + (P1[1] - (Pb[1] + x[7]))**2)**2*((P1[0] - (Pr[0] + x[3]))**2 + (P1[1] - (Pr[1] + x[4]))**2)) \
+        return 1/(( sigma_u**2*sigma_v**2*((P1[0] - (Pb[0] + x[6]))*(P1[0] - (Pr[0] + x[3])) + (P1[1] - (Pb[1] + x[7]))*(P1[1] - (Pr[1] + x[4])))**2/(((P1[0] - (Pb[0] + x[6]))**2 + (P1[1] - (Pb[1] + x[7]))**2)**2*((P1[0] - (Pr[0] + x[3]))**2 + (P1[1] - (Pr[1] + x[4]))**2)) \
                   + sigma_bearing**2*(sigma_v**2*fx**2*((P1[0] - (Pr[0] + x[3]))*(P1[0] - (Pc[0] + x[0])) + (P1[1] - (Pr[1] + x[4]))*(P1[1] - (Pc[1] + x[1])))**2 + sigma_u**2*fy**2*(P1[2] - (Pc[2] + x[2]))**2*((P1[1] - (Pr[1] + x[4]))*cos(thetac + x[9]) - (P1[0] - (Pr[0] + x[3]))*sin(thetac + x[9]))**2)/((cos(thetac + x[9])*(P1[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P1[1] - (Pc[1] + x[1])))**4*((P1[0] - (Pr[0] + x[3]))**2 + (P1[1] - (Pr[1] + x[4]))**2)) \
                   + sigma_ranging**2*(sigma_u**2*fx**2*((P1[0] - (Pb[0] + x[6]))*(P1[1] - (Pc[1] + x[1])) - (P1[1] - (Pb[1] + x[7]))*(P1[0] - (Pc[0] + x[0])))**2 + sigma_v**2*fy**2*(P1[2] - (Pc[2] + x[2]))**2*((P1[1] - (Pb[1] + x[7]))*sin(thetac + x[9]) + (P1[0] - (Pb[0] + x[6]))*cos(thetac + x[9]))**2)/((cos(thetac + x[9])*(P1[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P1[1] - (Pc[1] + x[1])))**4*((P1[0] - (Pb[0] + x[6]))**2 + (P1[1] - (Pb[1] + x[7]))**2)**2) \
                   + sigma_ranging**2*sigma_bearing**2*fx**2*fy**2*(P1[2] - (Pc[2] + x[2]))**2/(cos(thetac + x[9])*(P1[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P1[1] - (Pc[1] + x[1])))**6 \
@@ -43,7 +42,7 @@ def object_fun(x):
                   + sigma_bearing**2*(sigma_v**2*fx**2*((P3[0] - (Pr[0] + x[3]))*(P3[0] - (Pc[0] + x[0])) + (P3[1] - (Pr[1] + x[4]))*(P3[1] - (Pc[1] + x[1])))**2 + sigma_u**2*fy**2*(P3[2] - (Pc[2] + x[2]))**2*((P3[1] - (Pr[1] + x[4]))*cos(thetac + x[9]) - (P3[0] - (Pr[0] + x[3]))*sin(thetac + x[9]))**2)/((cos(thetac + x[9])*(P3[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P3[1] - (Pc[1] + x[1])))**4*((P3[0] - (Pr[0] + x[3]))**2 + (P3[1] - (Pr[1] + x[4]))**2)) \
                   + sigma_ranging**2*(sigma_u**2*fx**2*((P3[0] - (Pb[0] + x[6]))*(P3[1] - (Pc[1] + x[1])) - (P3[1] - (Pb[1] + x[7]))*(P3[0] - (Pc[0] + x[0])))**2 + sigma_v**2*fy**2*(P3[2] - (Pc[2] + x[2]))**2*((P3[1] - (Pb[1] + x[7]))*sin(thetac + x[9]) + (P3[0] - (Pb[0] + x[6]))*cos(thetac + x[9]))**2)/((cos(thetac + x[9])*(P3[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P3[1] - (Pc[1] + x[1])))**4*((P3[0] - (Pb[0] + x[6]))**2 + (P3[1] - (Pb[1] + x[7]))**2)**2) \
                   + sigma_ranging**2*sigma_bearing**2*fx**2*fy**2*(P3[2] - (Pc[2] + x[2]))**2/(cos(thetac + x[9])*(P3[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P3[1] - (Pc[1] + x[1])))**6 \
-                )/(sigma_u**6*sigma_v**6*sigma_ranging**6*sigma_bearing**6)
+                )/(sigma_u**6*sigma_v**6*sigma_ranging**6*sigma_bearing**6))
 
 def cons_maker(i=0):
 	def constraint(x):
@@ -56,20 +55,15 @@ def cons_maker1(i=0):
 	return constraint
 
 def odom(msg):
-	global P1,P2,P3,Pc,Pr,Pb,A,b
-	UAV1_index = msg.name.index('iris_camera')
-	UAV2_index = msg.name.index('iris_ranging')
-	UAV3_index = msg.name.index('iris_bearing')
-	car1_index = msg.name.index('car1')
-	car2_index = msg.name.index('car2')
-	car3_index = msg.name.index('car3')
+	global P1,P2,P3,Pc,Pr,Pb,A,b,thetac
 
-	Pc = np.array([msg.pose[UAV1_index].position.x, msg.pose[UAV1_index].position.y, msg.pose[UAV1_index].position.z])
-	Pr = np.array([msg.pose[UAV2_index].position.x, msg.pose[UAV2_index].position.y, msg.pose[UAV2_index].position.z])
-	Pb = np.array([msg.pose[UAV3_index].position.x, msg.pose[UAV3_index].position.y, msg.pose[UAV3_index].position.z])
-	P1 = np.array([msg.pose[car1_index].position.x, msg.pose[car1_index].position.y, msg.pose[car1_index].position.z])
-	P2 = np.array([msg.pose[car2_index].position.x, msg.pose[car2_index].position.y, msg.pose[car2_index].position.z])
-	P3 = np.array([msg.pose[car3_index].position.x, msg.pose[car3_index].position.y, msg.pose[car3_index].position.z])
+	Pc = np.array([msg.data[12], msg.data[13], msg.data[14]])
+	Pr = np.array([msg.data[15], msg.data[16], msg.data[17]])
+	Pb = np.array([msg.data[18], msg.data[19], msg.data[20]])
+	P1 = np.array([msg.data[0], msg.data[1], 0])
+	P2 = np.array([msg.data[4], msg.data[5], 0])
+	P3 = np.array([msg.data[8], msg.data[9], 0])
+	thetac = msg.data[21]
 	
 	nc = np.array([cos(thetac),sin(thetac),0])
 	nc_dot = np.array([-sin(thetac),cos(thetac),0])
@@ -176,6 +170,7 @@ def	qpsolver():
 	bnds = ((-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.2)) + ((0, np.inf),)*b.size
 	
 	optimal = minimize(object_fun, ini, method='SLSQP', bounds=bnds, constraints=cons,options={'maxiter':1000}).x
+	print(object_fun(optimal[:10]))
 
 	camera_cmd_vel.linear.x = optimal[0]
 	camera_cmd_vel.linear.y = optimal[1]
@@ -195,21 +190,15 @@ def	qpsolver():
 if __name__ == '__main__':
 	try:
 		rospy.init_node('controller')
-		thetac_pub = rospy.Publisher("/thetac", Float64MultiArray, queue_size=10)
 		uavtype = ["iris_camera","iris_ranging","iris_bearing"]
 		px4_camera = Px4Controller(uavtype[0])
 		px4_ranging = Px4Controller(uavtype[1])
 		px4_bearing = Px4Controller(uavtype[2])
 		rate = rospy.Rate(20)
-		while thetac == None:
-			thetac = px4_camera.current_heading
 		
 		while not rospy.is_shutdown():
-			msg = rospy.wait_for_message('/gazebo/model_states', ModelStates)
+			msg = rospy.wait_for_message('/state', Float64MultiArray)			
 			odom(msg)
-			thetac = px4_camera.current_heading
-			theta_c.data = [thetac]
-			thetac_pub.publish(theta_c)
 			qpsolver()
 			rate.sleep()
 	except rospy.ROSInterruptException:
