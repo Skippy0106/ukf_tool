@@ -6,8 +6,10 @@ import numpy as np
 from math import sin,cos,sqrt,atan2
 from gazebo_msgs.msg import ModelStates
 from std_msgs.msg import Float64MultiArray
+import rosbag
+bag = rosbag.Bag('covar_optimal_move.bag', 'w')
 
-P1,P2,P3,Pc,Pr,Pb,measurement = None,None,None,None,None,None,None
+P1,P2,P3,Pc,Pr,Pb,measurement,thetac = None,None,None,None,None,None,None,None
 fx,fy,Cu,Cv = 565.6,565.6,320.0,240.0
 time_last = 0
 det_covariance,all_state = Float64MultiArray(),Float64MultiArray()
@@ -16,31 +18,34 @@ det_covariance,all_state = Float64MultiArray(),Float64MultiArray()
 q = np.eye(12)
 q[0][0] = 0.0001
 q[1][1] = 0.0001
-q[2][2] = 0.0025
-q[3][3] = 0.0025
+q[2][2] = 0.0001
+q[3][3] = 0.0001
 q[4][4] = 0.0001
 q[5][5] = 0.0001
-q[6][6] = 0.0025
-q[7][7] = 0.0025
+q[6][6] = 0.0001
+q[7][7] = 0.0001
 q[8][8] = 0.0001
 q[9][9] = 0.0001
-q[10][10] = 0.0025
-q[11][11] = 0.0025
+q[10][10] = 0.0001
+q[11][11] = 0.0001
 
 # create measurement noise covariance matrices
 r_measurement = np.eye(12)
-r_measurement[0][0] = 0.000049
-r_measurement[1][1] = 0.000049
-r_measurement[2][2] = 0.0001
+r_measurement[0][0] = 4
+r_measurement[1][1] = 4
+r_measurement[2][2] = 0.0009
 r_measurement[3][3] = 0.0001
-r_measurement[4][4] = 0.000049
-r_measurement[5][5] = 0.000049
-r_measurement[6][6] = 0.0001
+r_measurement[4][4] = 4
+r_measurement[5][5] = 4
+r_measurement[6][6] = 0.0009
 r_measurement[7][7] = 0.0001
-r_measurement[8][8] = 0.000049
-r_measurement[9][9] = 0.000049
-r_measurement[10][10] = 0.0001
+r_measurement[8][8] = 4
+r_measurement[9][9] = 4
+r_measurement[10][10] = 0.0009
 r_measurement[11][11] = 0.0001
+
+# create initial matrices
+ini = np.array([0,-2,0,0,0,2,0,0,2,0,0,0])
 
 def iterate_x(x_in, timestep, inputs):
     '''this function is based on the x_dot and can be nonlinear as needed'''
@@ -100,7 +105,7 @@ def add_measurementnoise():
     global measurement
 
     measurement = measurement_model(state, uav_state)
-    measurement[[0,1,4,5,8,9]] += np.random.normal(0,0.007,6)
+    measurement[[0,1,4,5,8,9]] += np.random.normal(0,2,6)
     measurement[[2,3,6,7,10,11]] += np.random.normal(0,0.01,6)
 
 def ukf():
@@ -111,29 +116,45 @@ def ukf():
     state_estimator.update(12, measurement, r_measurement, uav_state)
     time_last = rospy.Time.now().to_sec()
 
+def theta_update(msg):
+    global thetac
+    thetac = msg.data[0]
+
 if __name__ == "__main__":
     try:
         rospy.init_node('estimate')
         state_pub = rospy.Publisher("/state", Float64MultiArray, queue_size=10)
-        det_covariance_pub = rospy.Publisher("/det_covariance", Float64MultiArray, queue_size=10)
+#        det_covariance_pub = rospy.Publisher("/det_covariance", Float64MultiArray, queue_size=10)
         # pass all the parameters into the UKF!
         # number of state variables, process noise, initial state, initial coariance, three tuning paramters, and the iterate function
-        state_estimator = UKF(12, q, np.zeros(12), 0.01*np.eye(12), 0.04, 0.0, 2.0, iterate_x,measurement_model)
-        rate = rospy.Rate(20)
+        state_estimator = UKF(12, q, ini, 0.01*np.eye(12), 0.001, 0.0, 2.0, iterate_x,measurement_model)
+        rate = rospy.Rate(40)
         while not rospy.is_shutdown():
             msg = rospy.wait_for_message('/gazebo/model_states', ModelStates)
             odom(msg)
-            thetac = rospy.wait_for_message('/theta_iris_camera', Float64MultiArray)
+            thetac_sub = rospy.Subscriber("/theta_iris_camera", Float64MultiArray, theta_update, queue_size=10)
+            while thetac == None:
+                pass
             state = np.array([P1[0],P1[1],0,0,P2[0],P2[1],0,0,P3[0],P3[1],0,0])
-            uav_state = np.array([Pc[0],Pc[1],Pc[2],Pr[0],Pr[1],Pr[2],Pb[0],Pb[1],Pb[2],thetac.data[0]])
+            uav_state = np.array([Pc[0],Pc[1],Pc[2],Pr[0],Pr[1],Pr[2],Pb[0],Pb[1],Pb[2],thetac])
             add_measurementnoise()
             ukf()
-            all_state.data = list(state_estimator.get_state())+list(uav_state)
+            estimate_state = state_estimator.get_state()
+            all_state.data = list(estimate_state)+list(uav_state)
             state_pub.publish(all_state)
-            print "Estimated state: ", state_estimator.get_state()
-            print "Covariance: ", np.linalg.det(state_estimator.get_covar())
-            det_covariance.data = [np.linalg.det(state_estimator.get_covar())]
-            det_covariance_pub.publish(det_covariance)
+#            print "Estimated state: ", state_estimator.get_state()
+#            print "Covariance: ", np.linalg.det(state_estimator.get_covar())
+            position_covar = state_estimator.get_covar()
+            position_covar = np.delete(position_covar,[2,3,6,7,10,11],axis=1)
+            position_covar = np.delete(position_covar,[2,3,6,7,10,11],axis=0)
+            det_covariance.data = [np.linalg.det(position_covar),np.linalg.norm([P1[0],P1[1]]-estimate_state[:2]),np.linalg.norm([P2[0],P2[1]]-estimate_state[4:6]),np.linalg.norm([P3[0],P3[1]]-estimate_state[8:10])]
+            print(det_covariance.data)
+            print('--')
+#            det_covariance_pub.publish(det_covariance)
+            bag.write('det_covariance', det_covariance)
+#            break
             rate.sleep()
     except rospy.ROSInterruptException:
         pass
+    finally:
+        bag.close()
