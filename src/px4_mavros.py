@@ -78,8 +78,8 @@ class Px4Controller:
         self.cmd_vel.twist.linear.y = msg.linear.y
         self.cmd_vel.twist.linear.z = msg.linear.z
         self.cmd_vel.twist.angular.z = msg.angular.z
-    	self.vel_pub.publish(self.cmd_vel)
-    
+        self.vel_pub.publish(self.cmd_vel)
+
     def imu_callback(self, msg):
         self.imu = msg
         self.current_heading = self.q2yaw(self.imu.orientation)

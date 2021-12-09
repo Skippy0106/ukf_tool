@@ -6,13 +6,15 @@ import numpy as np
 from math import sin,cos,sqrt,atan2
 from gazebo_msgs.msg import ModelStates
 from std_msgs.msg import Float64MultiArray
+from rosgraph_msgs.msg import Clock
 import rosbag
-bag = rosbag.Bag('covar_optimal_move.bag', 'w')
+bag = rosbag.Bag('optimal_random_move.bag', 'w')
 
 P1,P2,P3,Pc,Pr,Pb,measurement,thetac = None,None,None,None,None,None,None,None
 fx,fy,Cu,Cv = 565.6,565.6,320.0,240.0
 time_last = 0
 det_covariance,all_state = Float64MultiArray(),Float64MultiArray()
+clock = Clock()
 
 # Process Noise
 q = np.eye(12)
@@ -120,11 +122,16 @@ def theta_update(msg):
     global thetac
     thetac = msg.data[0]
 
+def clock_cb(msg):
+    global clock
+    clock = msg
+
 if __name__ == "__main__":
     try:
         rospy.init_node('estimate')
+        clock_sub = rospy.Subscriber("/clock", Clock, clock_cb, queue_size=10)
         state_pub = rospy.Publisher("/state", Float64MultiArray, queue_size=10)
-#        det_covariance_pub = rospy.Publisher("/det_covariance", Float64MultiArray, queue_size=10)
+
         # pass all the parameters into the UKF!
         # number of state variables, process noise, initial state, initial coariance, three tuning paramters, and the iterate function
         state_estimator = UKF(12, q, ini, 0.01*np.eye(12), 0.001, 0.0, 2.0, iterate_x,measurement_model)
@@ -150,8 +157,9 @@ if __name__ == "__main__":
             det_covariance.data = [np.linalg.det(position_covar),np.linalg.norm([P1[0],P1[1]]-estimate_state[:2]),np.linalg.norm([P2[0],P2[1]]-estimate_state[4:6]),np.linalg.norm([P3[0],P3[1]]-estimate_state[8:10])]
             print(det_covariance.data)
             print('--')
-#            det_covariance_pub.publish(det_covariance)
             bag.write('det_covariance', det_covariance)
+            bag.write('/gazebo/model_states', msg)
+            bag.write('/clock', clock)
 #            break
             rate.sleep()
     except rospy.ROSInterruptException:

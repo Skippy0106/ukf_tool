@@ -38,7 +38,7 @@ def start():
 
 def control():
 	global car1_cmd_vel,car2_cmd_vel,car3_cmd_vel,time
-	'''	
+	
 	if time < 101:
 		car1_cmd_vel.linear.x = 0.2
 		car2_cmd_vel.linear.x = 0.2
@@ -50,11 +50,11 @@ def control():
 		car1_cmd_vel.angular.z = -0.2
 		car2_cmd_vel.angular.z = -0.2
 		car3_cmd_vel.angular.z = -0.2
-	elif time < 261:
+	elif time < 301:
 		car1_cmd_vel.linear.x = 0.2
 		car2_cmd_vel.linear.x = 0.2
 		car3_cmd_vel.linear.x = 0.2
-	elif time < 321:
+	elif time < 361:
 		car1_cmd_vel.linear.x = 0.2
 		car2_cmd_vel.linear.x = 0.2
 		car3_cmd_vel.linear.x = 0.2
@@ -65,12 +65,20 @@ def control():
 		car1_cmd_vel.linear.x = 0.2
 		car2_cmd_vel.linear.x = 0.2
 		car3_cmd_vel.linear.x = 0.2
+	elif time < 601:
+		car1_cmd_vel.linear.x = 0.1
+		car2_cmd_vel.linear.x = 0.2
+		car3_cmd_vel.linear.x = 0.1
+		car1_cmd_vel.angular.z = 0.1
+		car2_cmd_vel.angular.z = 0.2
+		car3_cmd_vel.angular.z = 0.15
+
 	'''
 	if time < 600:
 		car1_cmd_vel.linear.x = 0.2
 		car2_cmd_vel.linear.x = 0.2
 		car3_cmd_vel.linear.x = 0.2
-
+	'''
 	car1_vel_pub.publish(car1_cmd_vel)
 	car2_vel_pub.publish(car2_cmd_vel)
 	car3_vel_pub.publish(car3_cmd_vel)

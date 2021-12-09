@@ -1,0 +1,133 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- vehicle model and world -->
+    <arg name="est" default="ekf2"/>
+    <arg name="vehicle" default="iris"/>
+    <arg name="world" default="$(find Multi-UAV-Multi-Target)/worlds/MUMT.world"/>
+
+    <!-- Gazebo sim -->
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="gui" value="true"/>
+        <arg name="world_name" value="$(arg world)"/>
+        <arg name="debug" value="false"/>
+        <arg name="verbose" value="false"/>
+        <arg name="paused" value="false"/>
+    </include>
+    <!-- Target1 -->
+	<group ns="car1">
+		<param name="robot_description" command="$(find xacro)/xacro $(find Multi-UAV-Multi-Target)/urdf/turtlebot3_description/turtlebot3_burger.urdf.xacro" />		
+		<node name="car1" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -model car1 -x -2 -y 0 -z 0 -R 0 -P 0 -Y 1.57 -param robot_description"/>
+	</group>
+	<!-- Target2 -->
+	<group ns="car2">		
+		<param name="robot_description" command="$(find xacro)/xacro $(find Multi-UAV-Multi-Target)/urdf/turtlebot3_description/turtlebot3_burger.urdf.xacro" />
+		<node name="car2" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -model car2 -x 2 -y 0 -z 0 -R 0 -P 0 -Y 1.57 -param robot_description"/>
+	</group>
+	<!-- Target3 -->
+	<group ns="car3">		
+		<param name="robot_description" command="$(find xacro)/xacro $(find Multi-UAV-Multi-Target)/urdf/turtlebot3_description/turtlebot3_burger.urdf.xacro" />
+		<node name="car3" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -model car3 -x 0 -y 2 -z 0 -R 0 -P 0 -Y 1.57 -param robot_description"/>
+	</group>-->
+
+    <!-- UAV0 -->
+    <group ns="iris_camera">
+        <!-- MAVROS and vehicle configs -->
+        <arg name="ID" value="0"/>
+        <arg name="fcu_url" default="udp://:14540@localhost:14580"/>
+        <!-- PX4 SITL and vehicle spawn -->
+        <include file="$(find Multi-UAV-Multi-Target)/launch/single_vehicle_spawn.launch">
+            <arg name="x" value="-5"/>
+            <arg name="y" value="1.16"/>
+            <arg name="z" value="0"/>
+            <arg name="R" value="0"/>
+            <arg name="P" value="0"/>
+            <arg name="Y" value="0.11"/>
+            <arg name="vehicle" value="iris_depth_camera"/>
+            <arg name="mavlink_udp_port" value="14560"/>
+            <arg name="mavlink_tcp_port" value="4560"/>
+            <arg name="ID" value="$(arg ID)"/>
+            <arg name="gst_udp_port" value="$(eval 5600 + arg('ID'))"/>
+            <arg name="video_uri" value="$(eval 5600 + arg('ID'))"/>
+            <arg name="mavlink_cam_udp_port" value="$(eval 14530 + arg('ID'))"/>
+			<arg name="type" value="camera"/>
+        </include>
+        <!-- MAVROS -->
+        <include file="$(find mavros)/launch/px4.launch">
+            <arg name="fcu_url" value="$(arg fcu_url)"/>
+            <arg name="gcs_url" value=""/>
+            <arg name="tgt_system" value="$(eval 1 + arg('ID'))"/>
+            <arg name="tgt_component" value="1"/>
+        </include>
+    </group>
+    <!-- UAV1 -->
+    <group ns="iris_ranging">
+        <!-- MAVROS and vehicle configs -->
+        <arg name="ID" value="1"/>
+        <arg name="fcu_url" default="udp://:14541@localhost:14581"/>
+        <!-- PX4 SITL and vehicle spawn -->
+        <include file="$(find Multi-UAV-Multi-Target)/launch/single_vehicle_spawn.launch">
+            <arg name="x" value="4.66"/>
+            <arg name="y" value="-2.79"/>
+            <arg name="z" value="0"/>
+            <arg name="R" value="0"/>
+            <arg name="P" value="0"/>
+            <arg name="Y" value="3.14"/>
+            <arg name="vehicle" value="$(arg vehicle)"/>
+            <arg name="mavlink_udp_port" value="14561"/>
+            <arg name="mavlink_tcp_port" value="4561"/>
+            <arg name="ID" value="$(arg ID)"/>
+            <arg name="gst_udp_port" value="$(eval 5600 + arg('ID'))"/>
+            <arg name="video_uri" value="$(eval 5600 + arg('ID'))"/>
+            <arg name="mavlink_cam_udp_port" value="$(eval 14530 + arg('ID'))"/>
+			<arg name="type" value="ranging"/>
+        </include>
+        <!-- MAVROS -->
+        <include file="$(find mavros)/launch/px4.launch">
+            <arg name="fcu_url" value="$(arg fcu_url)"/>
+            <arg name="gcs_url" value=""/>
+            <arg name="tgt_system" value="$(eval 1 + arg('ID'))"/>
+            <arg name="tgt_component" value="1"/>
+        </include>
+    </group>
+    <!-- UAV2 -->
+    <group ns="iris_bearing">
+        <!-- MAVROS and vehicle configs -->
+        <arg name="ID" value="2"/>
+        <arg name="fcu_url" default="udp://:14542@localhost:14582"/>
+        <!-- PX4 SITL and vehicle spawn -->
+        <include file="$(find Multi-UAV-Multi-Target)/launch/single_vehicle_spawn.launch">
+            <arg name="x" value="-2.95"/>
+            <arg name="y" value="2.54"/>
+            <arg name="z" value="0"/>
+            <arg name="R" value="0"/>
+            <arg name="P" value="0"/>
+            <arg name="Y" value="-1.57"/>
+            <arg name="vehicle" value="$(arg vehicle)"/>
+            <arg name="mavlink_udp_port" value="14562"/>
+            <arg name="mavlink_tcp_port" value="4562"/>
+            <arg name="ID" value="$(arg ID)"/>
+            <arg name="gst_udp_port" value="$(eval 5600 + arg('ID'))"/>
+            <arg name="video_uri" value="$(eval 5600 + arg('ID'))"/>
+            <arg name="mavlink_cam_udp_port" value="$(eval 14530 + arg('ID'))"/>
+			<arg name="type" value="bearing"/>
+        </include>
+        <!-- MAVROS -->
+        <include file="$(find mavros)/launch/px4.launch">
+            <arg name="fcu_url" value="$(arg fcu_url)"/>
+            <arg name="gcs_url" value=""/>
+            <arg name="tgt_system" value="$(eval 1 + arg('ID'))"/>
+            <arg name="tgt_component" value="1"/>
+        </include>
+    </group>
+
+	<node name="ArmandOffboard" pkg="Multi-UAV-Multi-Target" type="px4_mavros.py" output="screen" />
+	<param name="iris_camera/vel_control" type="int" value="0" />
+	<param name="iris_ranging/vel_control" type="int" value="0" />
+	<param name="iris_bearing/vel_control" type="int" value="0" />
+
+</launch>
+<!-- to add more UAVs (up to 10):
+Increase the id
+Change the name space
+Set the FCU to default="udp://:14540+id@localhost:14550+id"
+Set the malink_udp_port to 14560+id) -->
