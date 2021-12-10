@@ -11,6 +11,7 @@ from std_msgs.msg import Float64MultiArray
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.factory import get_sampling, get_crossover, get_mutation, get_termination
+from pymoo.util.termination.f_tol import MultiObjectiveSpaceToleranceTermination
 from pymoo.optimize import minimize
 
 P1,P2,P3,Pc,Pr,Pb,thetac,A,b = None,None,None,None,None,None,None,None,None
@@ -182,14 +183,23 @@ def	qpsolver():
 	global camera_cmd_vel,ranging_cmd_vel,bearing_cmd_vel
 	
 	objective = Objective()
-	algorithm = NSGA2(pop_size=5,n_offsprings=None,sampling=get_sampling("real_random"), \
+	algorithm = NSGA2(pop_size=100,n_offsprings=None,sampling=get_sampling("real_random"), \
 					  crossover=get_crossover("real_sbx", prob=0.9, eta=15), \
 					  mutation=get_mutation("real_pm", eta=20), eliminate_duplicates=True, \
-					  return_least_infeasible=False)
-	termination = get_termination("n_gen", 40)
+					  return_least_infeasible=True)
+	termination = MultiObjectiveSpaceToleranceTermination(tol=0.05,n_last=30,nth_gen=5)
 	res = minimize(objective, algorithm, termination, seed=1, save_history=True, verbose=True)
-	print(res.X)
-	'''
+	
+	tmp = np.inf
+	num_opt = 0
+
+	for i in range(len(res.F[:,0])):
+		if np.prod(res.F[i,:]) < tmp:
+			tmp = np.prod(res.F[i,:])
+			num_opt = i
+
+	optimal = res.X[num_opt,:]
+	
 	camera_cmd_vel.linear.x = optimal[0]
 	camera_cmd_vel.linear.y = optimal[1]
 	camera_cmd_vel.linear.z = optimal[2]
@@ -204,7 +214,7 @@ def	qpsolver():
 	px4_camera.vel_control(camera_cmd_vel)
 	px4_ranging.vel_control(ranging_cmd_vel)
 	px4_bearing.vel_control(bearing_cmd_vel)
-	'''
+	
 
 if __name__ == '__main__':
 	try:
