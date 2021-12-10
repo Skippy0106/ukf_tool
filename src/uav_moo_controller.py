@@ -11,7 +11,6 @@ from std_msgs.msg import Float64MultiArray
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.factory import get_sampling, get_crossover, get_mutation, get_termination
-from pymoo.util.termination.f_tol import MultiObjectiveSpaceToleranceTermination
 from pymoo.optimize import minimize
 
 P1,P2,P3,Pc,Pr,Pb,thetac,A,b = None,None,None,None,None,None,None,None,None
@@ -25,11 +24,12 @@ sigma_u,sigma_v,sigma_ranging,sigma_bearing = 1,1,1,1
 x_fov_wealth = 3*pi/180
 height_l = 0.5
 height_u = 100
-d_safe_car = 3
+d_safe_car = 2
 d_measuring = 7
 d_safe_uav = 1
 d_communication = 20
 gamma = 1.0
+eps = 0.01
 
 class Objective(ElementwiseProblem):
 
@@ -66,7 +66,7 @@ class Objective(ElementwiseProblem):
 
 def odom(msg):
 	global P1,P2,P3,Pc,Pr,Pb,A,b,thetac
-	
+	'''
 	Pc = np.array([msg.data[12], msg.data[13], msg.data[14]])
 	Pr = np.array([msg.data[15], msg.data[16], msg.data[17]])
 	Pb = np.array([msg.data[18], msg.data[19], msg.data[20]])
@@ -87,7 +87,7 @@ def odom(msg):
 	P1 = np.array([msg.pose[car1_index].position.x, msg.pose[car1_index].position.y, msg.pose[car1_index].position.z])
 	P2 = np.array([msg.pose[car2_index].position.x, msg.pose[car2_index].position.y, msg.pose[car2_index].position.z])
 	P3 = np.array([msg.pose[car3_index].position.x, msg.pose[car3_index].position.y, msg.pose[car3_index].position.z])
-	'''
+	
 	nc = np.array([cos(thetac),sin(thetac),0])
 	nc_dot = np.array([-sin(thetac),cos(thetac),0])
 	r1c_xy = np.array([P1[0] - Pc[0],P1[1] - Pc[1],0])
@@ -183,12 +183,11 @@ def	qpsolver():
 	global camera_cmd_vel,ranging_cmd_vel,bearing_cmd_vel
 	
 	objective = Objective()
-	algorithm = NSGA2(pop_size=100,n_offsprings=None,sampling=get_sampling("real_random"), \
+	algorithm = NSGA2(pop_size=20,n_offsprings=None,sampling=get_sampling("real_random"), \
 					  crossover=get_crossover("real_sbx", prob=0.9, eta=15), \
-					  mutation=get_mutation("real_pm", eta=20), eliminate_duplicates=True, \
-					  return_least_infeasible=True)
-	termination = MultiObjectiveSpaceToleranceTermination(tol=0.05,n_last=30,nth_gen=5)
-	res = minimize(objective, algorithm, termination, seed=1, save_history=True, verbose=True)
+					  mutation=get_mutation("real_pm", eta=20), eliminate_duplicates=True)
+	termination = get_termination("n_gen", 5)
+	res = minimize(objective, algorithm, termination, seed=1, save_history=True, verbose=True, return_least_infeasible=True)
 	
 	tmp = np.inf
 	num_opt = 0
@@ -198,7 +197,7 @@ def	qpsolver():
 			tmp = np.prod(res.F[i,:])
 			num_opt = i
 
-	optimal = res.X[num_opt,:]
+	optimal = res.X[num_opt,:10]
 	
 	camera_cmd_vel.linear.x = optimal[0]
 	camera_cmd_vel.linear.y = optimal[1]
@@ -224,19 +223,19 @@ if __name__ == '__main__':
 		px4_ranging = Px4Controller(uavtype[1])
 		px4_bearing = Px4Controller(uavtype[2])
 		rate = rospy.Rate(40)
-		'''
+		
 		while thetac == None:
 			thetac = px4_camera.current_heading
-		
-		while not rospy.is_shutdown():
-			msg = rospy.wait_for_message('/gazebo/model_states', ModelStates)
-			thetac = px4_camera.current_heading			
-			odom(msg)
 		'''
 		while not rospy.is_shutdown():
 			msg = rospy.wait_for_message('/state', Float64MultiArray)			
 			odom(msg)
-			
+		'''
+		while not rospy.is_shutdown():
+			msg = rospy.wait_for_message('/gazebo/model_states', ModelStates)
+			thetac = px4_camera.current_heading			
+			odom(msg)
+
 			qpsolver()
 			rate.sleep()
 	except rospy.ROSInterruptException:
