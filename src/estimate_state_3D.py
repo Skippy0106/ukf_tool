@@ -8,7 +8,7 @@ from gazebo_msgs.msg import ModelStates
 from std_msgs.msg import Float64MultiArray
 from rosgraph_msgs.msg import Clock
 import rosbag
-bag = rosbag.Bag('optimal_random_move.bag', 'w')
+bag = rosbag.Bag('optimal_worst.bag', 'w')
 
 P1,P2,P3,Pc,Pr,Pb,measurement,thetac = None,None,None,None,None,None,None,None
 fx,fy,Cu,Cv = 565.6,565.6,320.0,240.0
