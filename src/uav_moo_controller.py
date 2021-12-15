@@ -19,8 +19,8 @@ ranging_cmd_vel = Twist()
 bearing_cmd_vel = Twist()
 fx,fy,lx,ly = 0.1496485702,0.1496485702,0.1693333333,0.127
 #fx,fy,lx,ly = 565.6,565.6,640,480
-#sigma_u,sigma_v,sigma_ranging,sigma_bearing = 0.007,0.007,0.01,0.01
-sigma_u,sigma_v,sigma_ranging,sigma_bearing = 1,1,1,1
+sigma_u,sigma_v,sigma_ranging,sigma_bearing = 0.007,0.007,0.01,0.01
+#sigma_u,sigma_v,sigma_ranging,sigma_bearing = 1,1,1,1
 x_fov_wealth = 3*pi/180
 height_l = 0.5
 height_u = 100
@@ -43,19 +43,19 @@ class Objective(ElementwiseProblem):
                   + sigma_bearing**2*(sigma_v**2*fx**2*((P1[0] - (Pr[0] + x[3]))*(P1[0] - (Pc[0] + x[0])) + (P1[1] - (Pr[1] + x[4]))*(P1[1] - (Pc[1] + x[1])))**2 + sigma_u**2*fy**2*(P1[2] - (Pc[2] + x[2]))**2*((P1[1] - (Pr[1] + x[4]))*cos(thetac + x[9]) - (P1[0] - (Pr[0] + x[3]))*sin(thetac + x[9]))**2)/((cos(thetac + x[9])*(P1[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P1[1] - (Pc[1] + x[1])))**4*((P1[0] - (Pr[0] + x[3]))**2 + (P1[1] - (Pr[1] + x[4]))**2)) \
                   + sigma_ranging**2*(sigma_u**2*fx**2*((P1[0] - (Pb[0] + x[6]))*(P1[1] - (Pc[1] + x[1])) - (P1[1] - (Pb[1] + x[7]))*(P1[0] - (Pc[0] + x[0])))**2 + sigma_v**2*fy**2*(P1[2] - (Pc[2] + x[2]))**2*((P1[1] - (Pb[1] + x[7]))*sin(thetac + x[9]) + (P1[0] - (Pb[0] + x[6]))*cos(thetac + x[9]))**2)/((cos(thetac + x[9])*(P1[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P1[1] - (Pc[1] + x[1])))**4*((P1[0] - (Pb[0] + x[6]))**2 + (P1[1] - (Pb[1] + x[7]))**2)**2) \
                   + sigma_ranging**2*sigma_bearing**2*fx**2*fy**2*(P1[2] - (Pc[2] + x[2]))**2/(cos(thetac + x[9])*(P1[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P1[1] - (Pc[1] + x[1])))**6 \
-			)/(sigma_u**2*sigma_v**2*sigma_ranging**2*sigma_bearing**2)
+			)*(sigma_u**2*sigma_v**2*sigma_ranging**2*sigma_bearing**2)
 
 		f2 = 1/( sigma_u**2*sigma_v**2*((P2[0] - (Pb[0] + x[6]))*(P2[0] - (Pr[0] + x[3])) + (P2[1] - (Pb[1] + x[7]))*(P2[1] - (Pr[1] + x[4])))**2/(((P2[0] - (Pb[0] + x[6]))**2 + (P2[1] - (Pb[1] + x[7]))**2)**2*((P2[0] - (Pr[0] + x[3]))**2 + (P2[1] - (Pr[1] + x[4]))**2)) \
                   + sigma_bearing**2*(sigma_v**2*fx**2*((P2[0] - (Pr[0] + x[3]))*(P2[0] - (Pc[0] + x[0])) + (P2[1] - (Pr[1] + x[4]))*(P2[1] - (Pc[1] + x[1])))**2 + sigma_u**2*fy**2*(P2[2] - (Pc[2] + x[2]))**2*((P2[1] - (Pr[1] + x[4]))*cos(thetac + x[9]) - (P2[0] - (Pr[0] + x[3]))*sin(thetac + x[9]))**2)/((cos(thetac + x[9])*(P2[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P2[1] - (Pc[1] + x[1])))**4*((P2[0] - (Pr[0] + x[3]))**2 + (P2[1] - (Pr[1] + x[4]))**2)) \
                   + sigma_ranging**2*(sigma_u**2*fx**2*((P2[0] - (Pb[0] + x[6]))*(P2[1] - (Pc[1] + x[1])) - (P2[1] - (Pb[1] + x[7]))*(P2[0] - (Pc[0] + x[0])))**2 + sigma_v**2*fy**2*(P2[2] - (Pc[2] + x[2]))**2*((P2[1] - (Pb[1] + x[7]))*sin(thetac + x[9]) + (P2[0] - (Pb[0] + x[6]))*cos(thetac + x[9]))**2)/((cos(thetac + x[9])*(P2[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P2[1] - (Pc[1] + x[1])))**4*((P2[0] - (Pb[0] + x[6]))**2 + (P2[1] - (Pb[1] + x[7]))**2)**2) \
                   + sigma_ranging**2*sigma_bearing**2*fx**2*fy**2*(P2[2] - (Pc[2] + x[2]))**2/(cos(thetac + x[9])*(P2[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P2[1] - (Pc[1] + x[1])))**6 \
-			)/(sigma_u**2*sigma_v**2*sigma_ranging**2*sigma_bearing**2)
+			)*(sigma_u**2*sigma_v**2*sigma_ranging**2*sigma_bearing**2)
 
 		f3 = 1/( sigma_u**2*sigma_v**2*((P3[0] - (Pb[0] + x[6]))*(P3[0] - (Pr[0] + x[3])) + (P3[1] - (Pb[1] + x[7]))*(P3[1] - (Pr[1] + x[4])))**2/(((P3[0] - (Pb[0] + x[6]))**2 + (P3[1] - (Pb[1] + x[7]))**2)**2*((P3[0] - (Pr[0] + x[3]))**2 + (P3[1] - (Pr[1] + x[4]))**2)) \
                   + sigma_bearing**2*(sigma_v**2*fx**2*((P3[0] - (Pr[0] + x[3]))*(P3[0] - (Pc[0] + x[0])) + (P3[1] - (Pr[1] + x[4]))*(P3[1] - (Pc[1] + x[1])))**2 + sigma_u**2*fy**2*(P3[2] - (Pc[2] + x[2]))**2*((P3[1] - (Pr[1] + x[4]))*cos(thetac + x[9]) - (P3[0] - (Pr[0] + x[3]))*sin(thetac + x[9]))**2)/((cos(thetac + x[9])*(P3[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P3[1] - (Pc[1] + x[1])))**4*((P3[0] - (Pr[0] + x[3]))**2 + (P3[1] - (Pr[1] + x[4]))**2)) \
                   + sigma_ranging**2*(sigma_u**2*fx**2*((P3[0] - (Pb[0] + x[6]))*(P3[1] - (Pc[1] + x[1])) - (P3[1] - (Pb[1] + x[7]))*(P3[0] - (Pc[0] + x[0])))**2 + sigma_v**2*fy**2*(P3[2] - (Pc[2] + x[2]))**2*((P3[1] - (Pb[1] + x[7]))*sin(thetac + x[9]) + (P3[0] - (Pb[0] + x[6]))*cos(thetac + x[9]))**2)/((cos(thetac + x[9])*(P3[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P3[1] - (Pc[1] + x[1])))**4*((P3[0] - (Pb[0] + x[6]))**2 + (P3[1] - (Pb[1] + x[7]))**2)**2) \
                   + sigma_ranging**2*sigma_bearing**2*fx**2*fy**2*(P3[2] - (Pc[2] + x[2]))**2/(cos(thetac + x[9])*(P3[0] - (Pc[0] + x[0])) + sin(thetac + x[9])*(P3[1] - (Pc[1] + x[1])))**6 \
-			)/(sigma_u**2*sigma_v**2*sigma_ranging**2*sigma_bearing**2)
+			)*(sigma_u**2*sigma_v**2*sigma_ranging**2*sigma_bearing**2)
 
 		for i in range (b.size):
 			self.cons += list(A[i,0]*x[0] + A[i,1]*x[1] + A[i,2]*x[2] + A[i,3]*x[3] + A[i,4]*x[4] + A[i,5]*x[5] + A[i,6]*x[6] + A[i,7]*x[7] + A[i,8]*x[8] + A[i,9]*x[9] - b[i])
@@ -66,7 +66,7 @@ class Objective(ElementwiseProblem):
 
 def odom(msg):
 	global P1,P2,P3,Pc,Pr,Pb,A,b,thetac
-	'''
+	
 	Pc = np.array([msg.data[12], msg.data[13], msg.data[14]])
 	Pr = np.array([msg.data[15], msg.data[16], msg.data[17]])
 	Pb = np.array([msg.data[18], msg.data[19], msg.data[20]])
@@ -87,7 +87,7 @@ def odom(msg):
 	P1 = np.array([msg.pose[car1_index].position.x, msg.pose[car1_index].position.y, msg.pose[car1_index].position.z])
 	P2 = np.array([msg.pose[car2_index].position.x, msg.pose[car2_index].position.y, msg.pose[car2_index].position.z])
 	P3 = np.array([msg.pose[car3_index].position.x, msg.pose[car3_index].position.y, msg.pose[car3_index].position.z])
-	
+	'''
 	nc = np.array([cos(thetac),sin(thetac),0])
 	nc_dot = np.array([-sin(thetac),cos(thetac),0])
 	r1c_xy = np.array([P1[0] - Pc[0],P1[1] - Pc[1],0])
@@ -187,7 +187,7 @@ def	qpsolver():
 					  crossover=get_crossover("real_sbx", prob=0.9, eta=15), \
 					  mutation=get_mutation("real_pm", eta=20), eliminate_duplicates=True)
 	termination = get_termination("n_gen", 5)
-	res = minimize(objective, algorithm, termination, seed=1, save_history=True, verbose=True, return_least_infeasible=True)
+	res = minimize(objective, algorithm, termination, seed=1, save_history=True, verbose=False, return_least_infeasible=True)
 	
 	tmp = np.inf
 	num_opt = 0
@@ -198,6 +198,7 @@ def	qpsolver():
 			num_opt = i
 
 	optimal = res.X[num_opt,:10]
+	print(optimal)
 	
 	camera_cmd_vel.linear.x = optimal[0]
 	camera_cmd_vel.linear.y = optimal[1]
@@ -223,17 +224,17 @@ if __name__ == '__main__':
 		px4_ranging = Px4Controller(uavtype[1])
 		px4_bearing = Px4Controller(uavtype[2])
 		rate = rospy.Rate(40)
-		
+		'''
 		while thetac == None:
 			thetac = px4_camera.current_heading
-		'''
-		while not rospy.is_shutdown():
-			msg = rospy.wait_for_message('/state', Float64MultiArray)			
-			odom(msg)
-		'''
+		
 		while not rospy.is_shutdown():
 			msg = rospy.wait_for_message('/gazebo/model_states', ModelStates)
 			thetac = px4_camera.current_heading			
+			odom(msg)
+		'''
+		while not rospy.is_shutdown():
+			msg = rospy.wait_for_message('/state', Float64MultiArray)			
 			odom(msg)
 
 			qpsolver()

@@ -69,6 +69,7 @@ class UKF:
     def update(self, num_states, data, r_matrix, uav_state):
         """
         performs a measurement update
+        :param num_states: measurement number
         :param states: list of indices (zero-indexed) of which states were measured, that is, which are being updated
         :param data: list of the data corresponding to the values in states
         :param r_matrix: error matrix for the data, again corresponding to the values in states
