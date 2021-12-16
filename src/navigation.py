@@ -69,9 +69,23 @@ def control():
 		car1_cmd_vel.linear.x = 0.1
 		car2_cmd_vel.linear.x = 0.2
 		car3_cmd_vel.linear.x = 0.1
-		car1_cmd_vel.angular.z = 0.1
+		car1_cmd_vel.angular.z = -0.1
 		car2_cmd_vel.angular.z = 0.2
 		car3_cmd_vel.angular.z = 0.15
+	elif time < 701:
+		car1_cmd_vel.linear.x = 0.2
+		car2_cmd_vel.linear.x = 0.2
+		car3_cmd_vel.linear.x = 0.2
+		car1_cmd_vel.angular.z = -0.2
+		car2_cmd_vel.angular.z = 0.1
+		car3_cmd_vel.angular.z = 0.1
+	elif time < 801:
+		car1_cmd_vel.linear.x = 0.2
+		car2_cmd_vel.linear.x = 0.2
+		car3_cmd_vel.linear.x = 0.2
+		car1_cmd_vel.angular.z = -0.1
+		car2_cmd_vel.angular.z = -0.1
+		car3_cmd_vel.angular.z = -0.1
 
 	'''
 	if time < 600:
@@ -106,12 +120,12 @@ if __name__ == '__main__':
 		while not rospy.is_shutdown():
 			msg = rospy.wait_for_message('/gazebo/model_states', ModelStates)
 			odom(msg)
-			if err_c < 0.001 and err_r < 0.001 and err_b < 0.001:
+			if err_c < 0.01 and err_r < 0.01 and err_b < 0.01 and time == 0:
 				start()
 				time = 1
 			if time > 0:
 				control()
-			if time > 600:
+			if time > 800:
 				stop()
 				break
 			rate.sleep()
