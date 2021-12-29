@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>Multi-UAV-Multi-Target</name>
+  <name>ukf</name>
   <version>0.0.0</version>
-  <description>The Multi-UAV-Multi-Target package</description>
+  <description>ukf</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
