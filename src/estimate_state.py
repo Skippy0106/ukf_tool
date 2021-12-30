@@ -27,7 +27,7 @@ q[5][5] = 0.01
 # create measurement noise covariance matrices
 r_measurement = np.eye(3)
 r_measurement[0][0] = 0.0001
-r_measurement[1][1] = 0.00dd01
+r_measurement[1][1] = 0.0001
 r_measurement[2][2] = 0.0001
 
 # create initial matrices
