@@ -66,7 +66,7 @@ class UKF:
 
         return ret.T
 
-    def update(self, num_states, data, r_matrix, uav_state):
+    def update(self, num_states, data, r_matrix):
         """
         performs a measurement update
         :param num_states: measurement number
@@ -78,7 +78,7 @@ class UKF:
         self.lock.acquire()
 
         # create y, sigmas of just the states that are being updated
-        y = np.array([self.measurement_model(x, uav_state) for x in self.sigmas.T]).T
+        y = np.array([self.measurement_model(x) for x in self.sigmas.T]).T
 
         # create y_mean, the mean of just the states that are being updated
         y_mean = np.zeros(num_states)
@@ -117,7 +117,7 @@ class UKF:
 
         self.lock.release()
 
-    def predict(self, timestep, inputs=[]):
+    def predict(self, timestep):
         """
         performs a prediction step
         :param timestep: float, amount of time since last prediction
@@ -125,7 +125,7 @@ class UKF:
 
         self.lock.acquire()
 
-        sigmas_out = np.array([self.iterate(x, timestep, inputs) for x in self.sigmas.T]).T
+        sigmas_out = np.array([self.iterate(x, timestep) for x in self.sigmas.T]).T
 
         x_out = np.zeros(self.n_dim)
 
